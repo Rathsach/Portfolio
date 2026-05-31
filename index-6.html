@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CINDY MAC — CREATIVE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --border: #c8c8c8;
+      --border-dark: #888;
+      --row-h: 22px;
+      --col-bg: #e8e8e8;
+      --cell-bg: #fff;
+      --tab-h: 34px;
+      --blue: #2244ff;
+      --link: #0000cc;
+      --card-gap: 9px;
+    }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: #aaa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── TOOLBAR ── */
+    #toolbar {
+      background: #f0f0f0;
+      border-bottom: 1px solid var(--border-dark);
+      padding: 3px 8px;
+      font-size: 11px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      color: #333;
+      user-select: none;
+      flex-shrink: 0;
+      font-family: 'Courier New', monospace;
+    }
+    #name-box {
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      width: 80px;
+    }
+    #formula-bar {
+      flex: 1;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      padding: 1px 6px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #333;
+    }
+
+    /* ── STATUS BAR ── */
+    #status-bar {
+      display: none;
+      padding: 5px 10px 5px 56px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #000;
+      border-bottom: 1px solid rgba(0,0,0,0.18);
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      background: #f0f0f0;
+    }
+    #status-bar.visible { display: flex; }
+    .status-chip {
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Barlow Condensed', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    /* ── SHEET ── */
+    #sheet-wrapper { flex: 1; overflow: auto; background: #e0e0e0; }
+    #sheet { min-width: 100%; background: #fff; }
+
+    /* ── COLUMN HEADERS: C I N D Y M A C ── */
+    #col-headers {
+      display: flex;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 2px solid var(--border-dark);
+    }
+    .row-num-spacer {
+      width: 48px; min-width: 48px;
+      border-right: 1px solid var(--border);
+      background: var(--col-bg);
+    }
+    .col-header {
+      flex: 1;
+      height: 22px; line-height: 22px;
+      text-align: center;
+      font-size: 11px; font-weight: 700;
+      font-family: 'Courier New', monospace;
+      border-right: 1px solid var(--border);
+      background: var(--col-bg);
+      color: #555;
+      user-select: none;
+    }
+
+    /* ── ROWS ── */
+    .row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      min-height: var(--row-h);
+    }
+    .row-num {
+      width: 48px; min-width: 48px;
+      border-right: 2px solid var(--border-dark);
+      background: var(--col-bg);
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: #666;
+      text-align: center;
+      line-height: var(--row-h);
+      padding-top: 2px;
+      user-select: none;
+    }
+    .cell {
+      flex: 1;
+      border-right: 1px solid var(--border);
+      background: var(--cell-bg);
+      padding: 3px 5px;
+      font-size: 12px; color: #111;
+      position: relative;
+      overflow: hidden;
+    }
+    .s2 { flex:2; } .s3 { flex:3; } .s4 { flex:4; }
+    .s5 { flex:5; } .s6 { flex:6; } .s7 { flex:7; } .s8 { flex:8; }
+
+    /* ── CARD CELL: grey spreadsheet bg for cards to float on ── */
+    .card-cell {
+      background: var(--col-bg) !important;
+      padding: var(--card-gap) !important;
+      overflow: visible;
+    }
+
+    /* ── CARD WRAPPER: white card with shadow ── */
+    .card-wrap {
+      width: 100%; height: 100%;
+      background: #fff;
+      box-shadow: 3px 4px 0px rgba(0,0,0,0.22);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+    .card-wrap.clickable { cursor: pointer; }
+    .card-wrap.clickable:hover {
+      box-shadow: 5px 6px 0px rgba(0,0,0,0.28);
+      transform: translate(-1px, -1px);
+      transition: all 0.12s ease;
+    }
+
+    /* ── CARD: X wireframe image area ── */
+    .card-img {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+    .card-img img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .xwire {
+      width: 100%; height: 100%;
+      background: #f5f5f5;
+      position: relative;
+    }
+    .xwire svg {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    /* ── CARD FOOTER ── */
+    .card-footer {
+      flex-shrink: 0;
+      padding: 10px 12px 12px;
+      background: #fff;
+      border-top: 1px solid #efefef;
+    }
+    .card-footer .p-num {
+      font-family: 'Barlow', sans-serif;
+      font-size: 10px; color: #bbb;
+      margin-bottom: 3px;
+    }
+    .card-footer .p-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(13px, 1.6vw, 18px);
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #000;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .card-footer .p-link {
+      font-family: 'Barlow', sans-serif;
+      font-size: 11px;
+      color: var(--link);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* ── NAME CARD ── */
+    .name-card-inner {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px 16px;
+      gap: 4px;
+    }
+    .name-card-inner .nc-label {
+      font-family: 'Barlow', sans-serif;
+      font-size: 10px; color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+    .name-card-inner .nc-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 900;
+      text-transform: uppercase;
+      line-height: 0.95;
+      color: #000;
+    }
+    .name-card-inner .nc-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(14px, 1.8vw, 20px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #555;
+      margin-top: 6px;
+    }
+    .name-card-inner .nc-loc {
+      font-family: 'Barlow', sans-serif;
+      font-size: 11px; color: #999;
+      margin-top: 2px;
+    }
+
+    /* ── LINK CELLS ── */
+    .link-cell {
+      font-family: 'Barlow', sans-serif;
+      color: var(--link);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .link-cell:hover { color: #0000aa; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 10px;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 500; color: #999;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: block; padding: 5px 2px;
+    }
+
+    /* ── ABOUT / CONTACT / BODY TEXT ── */
+    .body-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px; line-height: 1.7; color: #222;
+      padding: 8px 6px;
+    }
+    .contact-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
+    .contact-item .cl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; width: 80px; }
+    .contact-item a { color: var(--link); text-decoration: underline; }
+    .avail-dot { display: inline-block; width: 8px; height: 8px; background: #00cc44; border-radius: 50%; margin-right: 6px; }
+
+    /* ── PROJECT DETAIL SPECIFICS ── */
+    .ph-dark {
+      width: 100%; min-height: 300px;
+      background: #f0f0f0; position: relative; overflow: hidden;
+    }
+    .ph-dark svg {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    .ph-vid {
+      min-height: 280px; background: #111;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; cursor: pointer;
+      font-family: 'Barlow', sans-serif;
+      font-size: 10px; color: #555;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .ph-vid:hover { background: #181818; }
+    .play-btn {
+      width: 44px; height: 44px;
+      border: 2px solid #444; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #555;
+    }
+
+    /* ── TAB BAR ── */
+    #tab-bar {
+      position: sticky; bottom: 0;
+      background: #d0d0d0;
+      border-top: 2px solid var(--border-dark);
+      display: flex; align-items: flex-end;
+      height: var(--tab-h);
+      gap: 3px; padding: 0 8px;
+      z-index: 10; overflow-x: auto; flex-shrink: 0;
+    }
+    .tab {
+      height: 28px; line-height: 28px;
+      padding: 0 14px;
+      font-size: 11px; font-family: 'Barlow', sans-serif; font-weight: 600;
+      border: 1px solid var(--border-dark); border-bottom: none;
+      cursor: pointer; user-select: none; white-space: nowrap;
+      background: #b8b8b8; color: #555;
+      transition: background 0.1s;
+    }
+    .tab:hover { background: #cacaca; }
+    .tab.active { background: #fff; color: #000; border-top: 2px solid #000; }
+    #tab-project { display: none; }
+    #tab-project.active { display: block; }
+
+    /* ── SECTIONS ── */
+    .sheet-section { display: none; }
+    .sheet-section.visible { display: block; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: #d0d0d0; }
+    ::-webkit-scrollbar-thumb { background: #aaa; border: 2px solid #d0d0d0; }
+
+    @media (max-width: 640px) {
+      .tab { padding: 0 10px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <input id="name-box" value="A1" readonly />
+  <span style="font-weight:bold;font-size:13px;color:#777;">fx</span>
+  <div id="formula-bar">=CINDY_MAC("CREATIVE")</div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="status-bar"></div>
+
+<!-- SHEET -->
+<div id="sheet-wrapper">
+<div id="sheet">
+
+  <!-- COLUMN HEADERS: C I N D Y M A C — plain grey -->
+  <div id="col-headers">
+    <div class="row-num-spacer"></div>
+    <div class="col-header">C</div>
+    <div class="col-header">I</div>
+    <div class="col-header">N</div>
+    <div class="col-header">D</div>
+    <div class="col-header">Y</div>
+    <div class="col-header">M</div>
+    <div class="col-header">A</div>
+    <div class="col-header">C</div>
+  </div>
+
+  <!-- ═══════════ HOME ═══════════ -->
+  <div id="sec-home" class="sheet-section visible">
+
+    <!-- Row 1: Navigation -->
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="cell"></div>
+      <div class="cell link-cell" onclick="switchTab('work')">WORK</div>
+      <div class="cell link-cell" onclick="switchTab('about')">ABOUT</div>
+      <div class="cell link-cell" onclick="switchTab('contact')">CONTACT</div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
+
+    <!-- Row 2: label -->
+    <div class="row">
+      <div class="row-num">2</div>
+      <div class="cell s8" style="background:#fff;"><span class="section-label">Selected Work</span></div>
+    </div>
+
+    <!-- Rows 3–13: Name card + Projects 01–02 (tall) -->
+    <div class="row" style="min-height:360px;">
+      <div class="row-num">3</div>
+      <div class="cell s2 card-cell" id="home-name"></div>
+      <div class="cell s3 card-cell" id="home-p1"></div>
+      <div class="cell s3 card-cell" id="home-p2"></div>
+    </div>
+
+    <!-- Row 14: spacer -->
+    <div class="row">
+      <div class="row-num">14</div>
+      <div class="cell s8" style="background:#f5f5f5;"></div>
+    </div>
+
+    <!-- Rows 15–24: Projects 03–05 (medium) -->
+    <div class="row" style="min-height:280px;">
+      <div class="row-num">15</div>
+      <div class="cell s3 card-cell" id="home-p3"></div>
+      <div class="cell s3 card-cell" id="home-p4"></div>
+      <div class="cell s2 card-cell" id="home-p5"></div>
+    </div>
+
+    <!-- Row 25: spacer -->
+    <div class="row">
+      <div class="row-num">25</div>
+      <div class="cell s8" style="background:#f5f5f5;"></div>
+    </div>
+
+    <!-- Rows 26–32: Project 06 full width -->
+    <div class="row" style="min-height:220px;">
+      <div class="row-num">26</div>
+      <div class="cell s8 card-cell" id="home-p6"></div>
+    </div>
+
+    <!-- Row 33: view all -->
+    <div class="row">
+      <div class="row-num">33</div>
+      <div class="cell s8" style="display:flex;align-items:center;padding:6px 10px;background:#f9f9f9;">
+        <span class="link-cell" onclick="switchTab('work')" style="font-size:11px;">View all work →</span>
+      </div>
+    </div>
+
+    <div class="row"><div class="row-num">34</div><div class="cell s8" style="background:#f0f0f0;height:20px;"></div></div>
+
+  </div><!-- /sec-home -->
+
+  <!-- ═══════════ WORK ═══════════ -->
+  <div id="sec-work" class="sheet-section">
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="cell link-cell" onclick="switchTab('home')">← Home</div>
+      <div class="cell s7"><span class="section-label">Work / Cases</span></div>
+    </div>
+    <div class="row"><div class="row-num">2</div><div class="cell s8"></div></div>
+    <div id="work-list"></div>
+    <div class="row"><div class="row-num">99</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+  </div>
+
+  <!-- ═══════════ ABOUT ═══════════ -->
+  <div id="sec-about" class="sheet-section">
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="cell link-cell" onclick="switchTab('home')">← Home</div>
+      <div class="cell s7"><span class="section-label">About</span></div>
+    </div>
+    <div class="row"><div class="row-num">2</div><div class="cell s8"></div></div>
+
+    <div class="row" style="min-height:200px;">
+      <div class="row-num">3</div>
+      <div class="cell s3 card-cell" style="min-height:200px;">
+        <div class="card-wrap" style="background:#f0f0f0;border:none;box-shadow:none;">
+          <div class="xwire" style="height:100%;">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect width="100" height="100" fill="#f0f0f0"/><line x1="0" y1="0" x2="100" y2="100" stroke="#ccc" stroke-width="0.6" vector-effect="non-scaling-stroke"/><line x1="100" y1="0" x2="0" y2="100" stroke="#ccc" stroke-width="0.6" vector-effect="non-scaling-stroke"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="cell s5" style="display:flex;flex-direction:column;justify-content:center;padding:24px 18px;gap:14px;">
+        <div>
+          <div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;font-family:'Barlow',sans-serif;">Name</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,4.5vw,52px);font-weight:900;text-transform:uppercase;line-height:1;">CINDY MAC</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;font-family:'Barlow',sans-serif;">Title</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-transform:uppercase;">Creative</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;font-family:'Barlow',sans-serif;">Based in</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:13px;">Copenhagen, Denmark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row"><div class="row-num">4</div><div class="cell s8"></div></div>
+    <div class="row">
+      <div class="row-num">5</div>
+      <div class="cell s2" style="background:#f9f9f9;"><span class="section-label">Biography</span></div>
+      <div class="cell s6"><div class="body-text">[Write your biography here. Talk about your background, what drives you, and what you bring to the table as a creative. Keep it raw and authentic.]</div></div>
+    </div>
+    <div class="row"><div class="row-num">6</div><div class="cell s8"></div></div>
+    <div class="row">
+      <div class="row-num">7</div>
+      <div class="cell s2" style="background:#f9f9f9;"><span class="section-label">Skills</span></div>
+      <div class="cell s2"><div class="body-text">Art Direction<br>Brand Identity<br>Campaign Dev.<br>Typography</div></div>
+      <div class="cell s2"><div class="body-text">Editorial Design<br>Visual Storytelling<br>Creative Strategy<br>Photo Direction</div></div>
+      <div class="cell s2"><div class="body-text">Adobe Suite<br>Figma<br>Print Production<br>Client Management</div></div>
+    </div>
+    <div class="row"><div class="row-num">8</div><div class="cell s8"></div></div>
+    <div class="row">
+      <div class="row-num">9</div>
+      <div class="cell s2" style="background:#f9f9f9;"><span class="section-label">Selected Clients</span></div>
+      <div class="cell s6"><div class="body-text">[Client 1] &nbsp; [Client 2] &nbsp; [Client 3] &nbsp; [Client 4] &nbsp; [Client 5]</div></div>
+    </div>
+    <div class="row"><div class="row-num">10</div><div class="cell s8"></div></div>
+    <div class="row"><div class="row-num">11</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+  </div>
+
+  <!-- ═══════════ CONTACT ═══════════ -->
+  <div id="sec-contact" class="sheet-section">
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="cell link-cell" onclick="switchTab('home')">← Home</div>
+      <div class="cell s7"><span class="section-label">Contact</span></div>
+    </div>
+    <div class="row"><div class="row-num">2</div><div class="cell s8"></div></div>
+    <div class="row" style="min-height:180px;">
+      <div class="row-num">3</div>
+      <div class="cell s5" style="display:flex;align-items:center;padding:24px 20px;">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(26px,5vw,64px);font-weight:900;text-transform:uppercase;line-height:1.0;letter-spacing:-1px;">
+          LET'S WORK<br>TOGETHER.
+        </span>
+      </div>
+      <div class="cell s3" style="display:flex;flex-direction:column;justify-content:center;padding:20px 16px;gap:14px;">
+        <div class="contact-item"><span class="cl">Email</span><a href="mailto:hello@cindymac.dk">hello@cindymac.dk</a></div>
+        <div class="contact-item"><span class="cl">Instagram</span><a href="#" target="_blank">@cindymac</a></div>
+        <div class="contact-item"><span class="cl">LinkedIn</span><a href="#" target="_blank">linkedin.com/in/cindymac</a></div>
+        <div class="contact-item"><span class="cl">Location</span><span>Copenhagen, DK</span></div>
+      </div>
+    </div>
+    <div class="row"><div class="row-num">4</div><div class="cell s8"></div></div>
+    <div class="row">
+      <div class="row-num">5</div>
+      <div class="cell s2" style="background:#f9f9f9;"><span class="section-label">Availability</span></div>
+      <div class="cell s6"><div class="body-text"><span class="avail-dot"></span>Available for new projects and collaborations — feel free to reach out.</div></div>
+    </div>
+    <div class="row"><div class="row-num">6</div><div class="cell s8"></div></div>
+    <div class="row"><div class="row-num">7</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+  </div>
+
+  <!-- ═══════════ PROJECT DETAIL ═══════════ -->
+  <div id="sec-project" class="sheet-section">
+    <div id="project-content"></div>
+  </div>
+
+</div><!-- /sheet -->
+</div><!-- /sheet-wrapper -->
+
+<!-- TAB BAR -->
+<div id="tab-bar">
+  <div class="tab active" id="tab-home"    onclick="switchTab('home')">Home</div>
+  <div class="tab"        id="tab-work"    onclick="switchTab('work')">Work</div>
+  <div class="tab"        id="tab-about"   onclick="switchTab('about')">About</div>
+  <div class="tab"        id="tab-contact" onclick="switchTab('contact')">Contact</div>
+  <div class="tab"        id="tab-project">—</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   HOW TO ADD IMAGES & VIDEO
+   ══════════════════════════════════════════════════════
+
+   IMAGES
+   ------
+   1. Create an "images/" folder next to index.html
+   2. Put your photos in it (jpg/png/webp)
+   3. Set  cover: "images/my-cover.jpg"
+      and  imgs:  ["images/img1.jpg", "images/img2.jpg", ...]
+
+   You can also use any public URL:
+      cover: "https://example.com/photo.jpg"
+
+   VIDEO
+   -----
+   Paste a YouTube or Vimeo URL directly — the site converts it:
+      videoUrl: "https://www.youtube.com/watch?v=XXXXXXXXXXX"
+      videoUrl: "https://vimeo.com/123456789"
+   Leave as "" if the project has no video.
+
+   ══════════════════════════════════════════════════════ */
+
+/* ── PROJECT DATA ── */
+const PROJECTS = [
+  {
+    id:1, num:'01', title:'Project Alpha', cat:'Brand Identity', year:'2024',
+    tags:['Print','Digital','Guidelines'], color:'#f7e000',
+    desc:'[Describe the idea behind Project Alpha. What was the brief? What was your approach and starting point? What do you want the viewer to feel? Keep it raw and direct.]',
+    cover:'klovnlogo.png',                                    // ← thumbnail on home card
+    imgs:  ['', '', ''],                          // ← gallery images on project page
+    videoUrl: '',                                 // ← YouTube or Vimeo URL
+  },
+  {
+    id:2, num:'02', title:'Project Beta', cat:'Campaign', year:'2024',
+    tags:['Social Media','OOH','360°'], color:'#ff22aa',
+    desc:'[Describe the idea behind Project Beta. What was the brief? What was your approach?]',
+    cover: '', imgs: ['', ''], videoUrl: '',
+  },
+  {
+    id:3, num:'03', title:'Project Gamma', cat:'Editorial', year:'2023',
+    tags:['Photography','Styling'], color:'#ff6600',
+    desc:'[Describe the idea behind Project Gamma. What was the brief? What was your approach?]',
+    cover: '', imgs: ['', '', '', ''], videoUrl: '',
+  },
+  {
+    id:4, num:'04', title:'Project Delta', cat:'Motion', year:'2023',
+    tags:['Animation','Video'], color:'#22ee55',
+    desc:'[Describe the idea behind Project Delta. What was the brief? What was your approach?]',
+    cover: '', imgs: ['', ''], videoUrl: '',
+  },
+  {
+    id:5, num:'05', title:'Project Epsilon', cat:'Installation', year:'2022',
+    tags:['Spatial Design','Exhibition'], color:'#9933ff',
+    desc:'[Describe the idea behind Project Epsilon. What was the brief? What was your approach?]',
+    cover: '', imgs: ['', '', ''], videoUrl: '',
+  },
+  {
+    id:6, num:'06', title:'Project Zeta', cat:'Photography', year:'2022',
+    tags:['Studio','Editorial','Beauty'], color:'#ff3322',
+    desc:'[Describe the idea behind Project Zeta. What was the brief? What was your approach?]',
+    cover: '', imgs: ['', '', ''], videoUrl: '',
+  },
+];
+
+const FORMULAE = {
+  home:    '=CINDY_MAC("CREATIVE")',
+  work:    '=FILTER(projects, category="ALL")',
+  about:   '=VLOOKUP("CINDY_MAC", profile, 2, FALSE)',
+  contact: '=MAILTO("hello@cindymac.dk")',
+};
+const ALL_TABS = ['home','work','about','contact','project'];
+
+/* X-wire SVG placeholder */
+function xwireHTML(minH) {
+  const h = minH ? `style="min-height:${minH}px;"` : '';
+  return `<div class="xwire" ${h}>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#f5f5f5"/>
+      <line x1="0" y1="0" x2="100" y2="100" stroke="#c8c8c8" stroke-width="0.6" vector-effect="non-scaling-stroke"/>
+      <line x1="100" y1="0" x2="0" y2="100" stroke="#c8c8c8" stroke-width="0.6" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>`;
+}
+
+/* Real image OR wireframe fallback */
+function imgOrWire(src, minH) {
+  if (src) return `<img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;min-height:${minH||0}px;" alt="" />`;
+  return xwireHTML(minH);
+}
+
+/* Convert YouTube / Vimeo watch URL → embed URL */
+function toEmbedUrl(url) {
+  if (!url) return '';
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/\s]+)/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vi = url.match(/vimeo\.com\/(\d+)/);
+  if (vi) return `https://player.vimeo.com/video/${vi[1]}`;
+  return url; // already an embed URL
+}
+
+/* project card for home grid */
+function homeCardHTML(p, landscape) {
+  const imgH = landscape ? 120 : 160;
+  return `
+    <div class="card-wrap clickable" onclick="openProject(${p.id})">
+      <div class="card-img">${imgOrWire(p.cover, imgH)}</div>
+      <div class="card-footer">
+        <div class="p-num">${p.num}</div>
+        <div class="p-title">${p.title}</div>
+        <span class="p-link">View Project →</span>
+      </div>
+    </div>`;
+}
+
+/* name card */
+function buildNameCard() {
+  const el = document.getElementById('home-name');
+  el.innerHTML = `
+    <div class="card-wrap">
+      <div class="name-card-inner">
+        <div class="nc-label">Portfolio</div>
+        <div class="nc-name">CINDY<br>MAC</div>
+        <div class="nc-title">Creative</div>
+        <div class="nc-loc">Copenhagen, DK</div>
+      </div>
+    </div>`;
+}
+
+/* ── TAB SWITCHING ── */
+function switchTab(name) {
+  ALL_TABS.forEach(s => {
+    document.getElementById('sec-'+s)?.classList.remove('visible');
+    document.getElementById('tab-'+s)?.classList.remove('active');
+  });
+  document.getElementById('sec-'+name).classList.add('visible');
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('formula-bar').textContent = FORMULAE[name] || '=...';
+  document.getElementById('sheet-wrapper').scrollTop = 0;
+  document.getElementById('tab-project').style.display = (name==='project') ? 'block' : 'none';
+  if (name !== 'project') document.getElementById('status-bar').classList.remove('visible');
+}
+
+/* ── OPEN PROJECT ── */
+function openProject(id) {
+  const p = PROJECTS.find(x => x.id === id);
+  if (!p) return;
+  const isDark = id === 5;
+  const tc = isDark ? '#fff' : '#000';
+  const mc = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.38)';
+
+  const tagsHtml = p.tags.map(t =>
+    `<span class="status-chip" style="background:${p.color};color:${tc};">${t}</span>`
+  ).join('');
+
+  /* gallery images */
+  let imgHtml = '';
+  (p.imgs || []).forEach(src => {
+    imgHtml += `<div class="cell" style="padding:0;">
+      <div class="ph-dark" style="min-height:220px;overflow:hidden;">
+        ${imgOrWire(src, 220)}
+      </div>
+    </div>`;
+  });
+
+  /* video */
+  const embedUrl = toEmbedUrl(p.videoUrl);
+  const videoHtml = embedUrl ? `
+    <div class="row"><div class="row-num">7</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+    <div class="row" style="min-height:320px;">
+      <div class="row-num">8</div>
+      <div class="cell" style="background:#f5f5f5;"></div>
+      <div class="cell s6" style="padding:0;">
+        <iframe src="${embedUrl}" style="width:100%;height:100%;min-height:320px;border:none;display:block;"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+      <div class="cell" style="background:#f5f5f5;"></div>
+    </div>` : '';
+
+  document.getElementById('project-content').innerHTML = `
+    <div class="row">
+      <div class="row-num">1</div>
+      <div class="cell link-cell" onclick="switchTab('work')" style="padding:4px 6px;">← All Projects</div>
+      <div class="cell s7"><span class="section-label">${p.num} / ${p.cat.toUpperCase()} · ${p.year}</span></div>
+    </div>
+
+    <div class="row" style="min-height:160px;">
+      <div class="row-num">2</div>
+      <div class="cell s8" style="background:${p.color};display:flex;flex-direction:column;justify-content:center;padding:24px 28px;gap:12px;">
+        <div style="font-family:'Barlow',sans-serif;font-size:10px;color:${mc};letter-spacing:2px;text-transform:uppercase;">${p.year} · ${p.cat}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5.5vw,72px);font-weight:900;text-transform:uppercase;line-height:0.93;letter-spacing:-2px;color:${tc};">${p.title}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${tagsHtml}</div>
+      </div>
+    </div>
+
+    <div class="row" style="min-height:340px;">
+      <div class="row-num">3</div>
+      <div class="cell s8" style="padding:0;overflow:hidden;">
+        <div class="ph-dark" style="min-height:340px;overflow:hidden;">
+          ${imgOrWire(p.cover || (p.imgs && p.imgs[0]), 340)}
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row-num">4</div>
+      <div class="cell s2" style="background:#f5f5f5;"><span class="section-label">The Idea</span></div>
+      <div class="cell s6"><div class="body-text" style="max-width:680px;font-size:13px;line-height:1.85;">${p.desc}</div></div>
+    </div>
+
+    <div class="row"><div class="row-num">5</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+
+    <div class="row" style="min-height:220px;">
+      <div class="row-num">6</div>${imgHtml}
+    </div>
+
+    ${videoHtml}
+
+    <div class="row"><div class="row-num">9</div><div class="cell s8" style="background:#f5f5f5;"></div></div>
+    <div class="row">
+      <div class="row-num">10</div>
+      <div class="cell s4" style="display:flex;align-items:center;padding:8px 10px;">
+        <span class="link-cell" onclick="switchTab('work')" style="font-size:11px;">← Back to all projects</span>
+      </div>
+      <div class="cell s4" style="display:flex;align-items:center;justify-content:flex-end;padding:8px 10px;" id="proj-next-btn"></div>
+    </div>
+    <div class="row"><div class="row-num">11</div><div class="cell s8" style="background:#ececec;"></div></div>
+  `;
+
+  const next = PROJECTS.find(x => x.id === id+1);
+  if (next) document.getElementById('proj-next-btn').innerHTML =
+    `<span class="link-cell" onclick="openProject(${next.id})" style="font-size:11px;">Next: ${next.num} ${next.title} →</span>`;
+
+  document.getElementById('tab-project').textContent = p.num + ' ' + p.title;
+  FORMULAE['project'] = `=GET_PROJECT("${p.title}", ${p.year})`;
+
+  const sb = document.getElementById('status-bar');
+  sb.innerHTML = `<span class="status-chip" style="background:${p.color};color:${tc};">${p.num}</span> Viewing: <strong>${p.title}</strong> — ${p.cat} · ${p.year}`;
+  sb.classList.add('visible');
+  switchTab('project');
+}
+
+/* ── BUILD HOME CARDS ── */
+function buildHomeCards() {
+  buildNameCard();
+  [1,2,3,4,5].forEach(id => {
+    const el = document.getElementById('home-p' + id);
+    if (el) el.innerHTML = homeCardHTML(PROJECTS.find(x => x.id===id));
+  });
+  const p6el = document.getElementById('home-p6');
+  if (p6el) p6el.innerHTML = homeCardHTML(PROJECTS.find(x => x.id===6), true);
+}
+
+/* ── BUILD WORK LIST ── */
+function buildWorkSection() {
+  const container = document.getElementById('work-list');
+  let html = '';
+  PROJECTS.forEach((p, i) => {
+    const rn = 3 + i*2;
+    const flip = i % 2 === 1;
+    const isDark = p.id === 5;
+    const tc = isDark ? '#fff' : '#000';
+    const imgCell = `
+      <div class="cell s4" style="padding:0;cursor:pointer;" onclick="openProject(${p.id})">
+        <div class="xwire" style="width:100%;height:100%;min-height:260px;">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect width="100" height="100" fill="#f5f5f5"/><line x1="0" y1="0" x2="100" y2="100" stroke="#c8c8c8" stroke-width="0.6" vector-effect="non-scaling-stroke"/><line x1="100" y1="0" x2="0" y2="100" stroke="#c8c8c8" stroke-width="0.6" vector-effect="non-scaling-stroke"/></svg>
+        </div>
+      </div>`;
+    const textCell = `
+      <div class="cell s4" style="display:flex;flex-direction:column;justify-content:center;padding:22px 18px;gap:10px;cursor:pointer;" onclick="openProject(${p.id})">
+        <div style="font-family:'Barlow',sans-serif;font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;">${p.num} / ${p.cat.toUpperCase()}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(22px,3.2vw,42px);font-weight:900;text-transform:uppercase;line-height:1;">${p.title}</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:12px;color:#555;line-height:1.65;">${p.desc.substring(0,100)}...</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:10px;color:#999;">${p.year} · ${p.tags.join(' · ')}</div>
+        <span class="link-cell" style="font-size:11px;margin-top:2px;">View Project →</span>
+      </div>`;
+    html += `
+      <div class="row" style="min-height:260px;">
+        <div class="row-num">${rn}</div>
+        ${flip ? textCell+imgCell : imgCell+textCell}
+      </div>
+      <div class="row"><div class="row-num">${rn+1}</div><div class="cell s8" style="background:#f5f5f5;"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+/* ── INIT ── */
+buildHomeCards();
+buildWorkSection();
+
+/* ── CELL CLICK → NAME BOX ── */
+document.addEventListener('click', e => {
+  const cell = e.target.closest('.cell');
+  if (!cell) return;
+  const row = cell.closest('.row');
+  if (!row) return;
+  const rn = row.querySelector('.row-num');
+  const r = rn ? rn.textContent.trim() : '?';
+  const cols = 'CINDYMAC';
+  const cells = Array.from(row.querySelectorAll(':scope > .cell'));
+  const idx = cells.indexOf(cell);
+  const c = idx >= 0 ? (cols[idx] || 'C') : 'C';
+  document.getElementById('name-box').value = c + r;
+});
+</script>
+</body>
+</html>
